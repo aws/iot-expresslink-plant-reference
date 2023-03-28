@@ -1,5 +1,10 @@
 export const ConfigParams = {
-    appName: "Plant-Enviornment",
+    appName: "Plant-Environment",
+    // change env if there is a specific account and region you want to deploy to
+    env: { 
+        account: process.env.CDK_DEFAULT_ACCOUNT, 
+        region: process.env.CDK_DEFAULT_REGION 
+    },
     logGroupName: "iot_to_cloudwatch_log_group",
     email: '',
     waterAlarm: {
