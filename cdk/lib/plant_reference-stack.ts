@@ -14,6 +14,8 @@ import { ConfigParams } from '../config-params';
 import { CfnWorkspace } from 'aws-cdk-lib/aws-grafana';
 import { Runtime, Code, LayerVersion } from 'aws-cdk-lib/aws-lambda';
 import { TriggerFunction } from 'aws-cdk-lib/triggers';
+import { EventbridgeToLambda } from '@aws-solutions-constructs/aws-eventbridge-lambda';
+import { Schedule } from 'aws-cdk-lib/aws-events';
 
 export class PlantReferenceStack extends Stack {
   constructor(scope: Construct, id: string, props?: StackProps) {
@@ -253,13 +255,13 @@ export class PlantReferenceStack extends Stack {
     const grafanaLambda = new TriggerFunction(this, `${ConfigParams.appName}--GrafanaLambda`, {
       runtime: Runtime.NODEJS_18_X,
       code: Code.fromAsset('lib'),
-      handler: 'plant_reference.handler',
+      handler: 'grafana.handler',
       environment: {
         'workspaceId': grafanaWorkspace.attrId,
         'url': `https://${grafanaWorkspace.attrId}.grafana-workspace.${ConfigParams.env.region}.amazonaws.com`,
         'region': `${ConfigParams.env.region}`
-     },
-      role: Role.fromRoleArn(this, "LambdaRole", grafanaRole.attrArn),
+      },
+      role: Role.fromRoleArn(this, "GrafanaLambdaRole", grafanaRole.attrArn),
       timeout: Duration.seconds(30)
     });
     grafanaLambda.applyRemovalPolicy(RemovalPolicy.DESTROY);
@@ -269,5 +271,39 @@ export class PlantReferenceStack extends Stack {
       code: Code.fromAsset("lib/node-fetch.zip"),
       compatibleRuntimes: [Runtime.NODEJS_18_X]
     }));
+
+    const wateringScheduler = new EventbridgeToLambda(this, `${ConfigParams.appName}--ShadowLambda`, {
+      lambdaFunctionProps: {
+        runtime: Runtime.NODEJS_18_X,
+        code: Code.fromAsset('lib'),
+        handler: 'watering.handler',
+        timeout: Duration.seconds(30),
+        environment: {
+          'thingName': `${ConfigParams.env.thingName}`,
+          'endpoint': `${ConfigParams.env.endpoint}`
+        },
+      },
+      eventRuleProps: {
+        schedule: Schedule.rate(Duration.days(ConfigParams.wateringFrequency))
+      }
+    }
+    );
+    wateringScheduler.lambdaFunction.addToRolePolicy(
+      new PolicyStatement({
+        effect: Effect.ALLOW,
+        actions: [
+          "iot:Connect",
+          "iot:Publish",
+          "iot:Subscribe",
+          "iot:Receive",
+          "iot:DeleteThingShadow",
+          "iot:GetThingShadow",
+          "iot:UpdateThingShadow"
+        ],
+        resources: ["*"]
+      })
+    )
+    wateringScheduler.lambdaFunction.applyRemovalPolicy(RemovalPolicy.DESTROY);
+    wateringScheduler.eventsRule.applyRemovalPolicy(RemovalPolicy.DESTROY);
   }
 }

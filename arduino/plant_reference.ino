@@ -1,30 +1,4 @@
-#include <STM32LowPower.h>
-#include <HardwareSerial.h>
-#include <Wire.h>
-#include <SparkFunTMP102.h>
-
-// FILL THIS IN IF RECONFIGURING EXPRESSLINK
-#define MY_AWS_IOT_ENDPOINT ""
-#define MY_SSID ""
-#define MY_PASSPHRASE ""
-
-#define EXPRESSLINK_SERIAL_RX_PIN 0
-#define EXPRESSLINK_SERIAL_TX_PIN 1
-
-HardwareSerial expresslink_serial(EXPRESSLINK_SERIAL_RX_PIN, EXPRESSLINK_SERIAL_TX_PIN);
-TMP102 tempSensor;
-
-// Sensor pins
-#define waterSensorPin A0
-#define lightSensorPin A1
-#define powerPin D7
-
-uint32_t sendInterval = 300000; // number of ms to wait between MQTT messages
-uint32_t timeout_ms = 20000;    // number of ms to wait for ExpressLink response
-int waterLevel = 0;
-int light = 0;
-int temperature = 0;
-char MQTTMessage[70];
+#include "plant_reference.h"
 
 void setup()
 {
@@ -33,28 +7,70 @@ void setup()
   Wire.begin(); // Join I2C Bus
   LowPower.begin();
   tempSensor.begin();
+  soilSensor.begin(0x36); //0x36 is the soil sensors I2C address
 
   pinMode(powerPin, OUTPUT);   // configure D7 pin as an OUTPUT
-  digitalWrite(powerPin, LOW); // turn the sensor OFF
+  digitalWrite(powerPin, LOW); // turn the sensors OFF
+
+  pinMode(waterPin, OUTPUT);   // configure D6 pin as an OUTPUT
+  digitalWrite(waterPin, LOW); // turn the water pump OFF  
 
   pinMode(LED_BUILTIN, OUTPUT);
 
   do
   {
-    expresslinkExecuteCommand("AT+RESET");
-    expresslinkExecuteCommand("AT+CONF Topic1=PlantData");
     // UNCOMMENT THE LINE BELOW IF RECONFIGURING EXPRESSLINK
     // expresslinkInit();
-  } while (expresslinkExecuteCommand("AT+CONNECT").startsWith("OK") == false);
+    expresslinkExecuteCommand("AT+RESET\n");
+    expresslinkExecuteCommand("AT+CONF Topic1=PlantData\n");
+    expresslinkExecuteCommand("AT+CONF EnableShadow=1\n");
+    expresslinkExecuteCommand("AT+CONF Shadow1=PlantShadow\n");
+    expresslinkExecuteCommand("AT+CONNECT\n");
+  } while (!startsWith(expresslinkResponse, "OK", 2));
+
+  sendShadowCommandSeq("AT+SHADOW1 INIT\n", "AT+Event?\n", "OK 20", "OK 21");
+  sendShadowCommandSeq("AT+SHADOW1 UPDATE {\"state\":{\"desired\":{\"water\": \"off\" } } }\n",
+                       "AT+SHADOW1 GET UPDATE\n",
+                       "OK 1",
+                       "OK 0");
+  sendShadowCommandSeq("AT+SHADOW1 SUBSCRIBE\n", "AT+Event?\n", "OK 26", "OK 27");
 }
 
 void loop()
 {
+  do {
+    expresslinkExecuteCommand("AT+Event?\n");
+    
+    if (startsWith(expresslinkResponse, "OK 3", 4)) {
+      expresslinkExecuteCommand("AT+CONNECT\n");
+      while (!startsWith(expresslinkResponse, "OK", 2)) {
+        Serial.println(F("Attempting to reconnect"));
+        expresslinkExecuteCommand("AT+CONNECT\n");
+      }
+    } else if (startsWith(expresslinkResponse, "OK 24", 5)) {
+      updateShadow();
+    }
+  } while (startsWith(expresslinkResponse, "OK ", 3));
+  
   // get and send data every 5 min
-  getData();
-  sendData();
-  delay(5);
-  LowPower.sleep(sendInterval);
+  if (millis()-lastDataSend >= sendInterval) {
+    lastDataSend = millis();
+    getData();
+    sendData();
+  }
+
+  if (waterOn) {
+    if (millis()-pumpStart >= pumpDuration) {
+      sendShadowCommandSeq("AT+SHADOW1 UPDATE {\"state\":{\"desired\":{\"water\": \"off\" } } }\n",
+                           "AT+SHADOW1 GET UPDATE\n",
+                           "OK 1",
+                           "OK 0");
+    } else {
+      delay(pumpDuration);
+    }
+  } else {
+    delay(sendInterval-(millis()-lastDataSend)); //adjust sleep to ensure data sent every sendInterval
+  }
 }
 
 void getData()
@@ -65,6 +81,8 @@ void getData()
   tempSensor.wakeup();
   temperature = tempSensor.readTempF();
   tempSensor.sleep();
+
+  soilMoisture = soilSensor.touchRead(0);
 
   // read water level in tank
   waterLevel = analogRead(waterSensorPin);
@@ -80,10 +98,11 @@ void sendData()
   digitalWrite(LED_BUILTIN, HIGH); // Blink stat LED
 
   sprintf(MQTTMessage,
-          "AT+SEND1 { \"temperature\": %i, \"waterLevel\": %i, \"light\": %i }",
+          "AT+SEND1 { \"temperature\": %i, \"waterLevel\": %i, \"light\": %i, \"soilMoisture\":%i }\n",
           temperature,
           waterLevel,
-          light);
+          light,
+          soilMoisture);
 
   // send the json payload over MQTT
   expresslinkExecuteCommand(MQTTMessage);
@@ -95,20 +114,60 @@ void expresslinkInit()
 {
   if (MY_AWS_IOT_ENDPOINT == "" || MY_SSID == "" || MY_PASSPHRASE == "")
   {
-    Serial.println("Need to define IoT Endpoint and WIFI");
+    Serial.println(F("Need to define IoT Endpoint and WIFI"));
     exit(1);
   }
-  expresslinkExecuteCommand("AT+CONF Endpoint=" MY_AWS_IOT_ENDPOINT "");
-  expresslinkExecuteCommand("AT+CONF SSID=" MY_SSID "");
-  expresslinkExecuteCommand("AT+CONF Passphrase=" MY_PASSPHRASE "");
+  expresslinkExecuteCommand("AT+CONF? ThingName");
+  expresslinkExecuteCommand("AT+CONF? Certificate pem");
+  expresslinkExecuteCommand("AT+CONF Endpoint=" MY_AWS_IOT_ENDPOINT "\n");
+  expresslinkExecuteCommand("AT+CONF SSID=" MY_SSID "\n");
+  expresslinkExecuteCommand("AT+CONF Passphrase=" MY_PASSPHRASE "\n");
 }
 
-String expresslinkExecuteCommand(char *command)
+void expresslinkExecuteCommand(char *command)
 {
-  Serial.println(command);
-  expresslink_serial.println(command);
+  Serial.printf(command);
+  expresslink_serial.printf(command);
   expresslink_serial.setTimeout(timeout_ms);
-  String s = expresslink_serial.readStringUntil('\n');
-  Serial.println(s);
-  return s;
+  String response = expresslink_serial.readStringUntil('\n');
+  int responseLen = response.length() + 1; 
+  response.toCharArray(expresslinkResponse, responseLen);
+  Serial.println(F(expresslinkResponse));
+}
+
+void updateShadow(){
+  expresslinkExecuteCommand("AT+SHADOW1 GET DELTA\n");
+  JsonObject& delta = jsonBuffer.parseObject(String(expresslinkResponse).substring(3));
+  const char* updateMes = delta["state"]["water"];
+  waterOn = strcmp(updateMes, "on") == 0;
+
+  if (waterOn) {
+    pumpStart = millis();
+    Serial.println("WATER PUMP ON");
+    digitalWrite(waterPin, HIGH);
+  } else {
+    Serial.println("WATER PUMP OFF");
+    digitalWrite(waterPin, LOW);
+  }
+}
+
+bool startsWith(char* response, char *str, int len) {
+  char subbuff[len+1];
+  memcpy( subbuff, &response[0], len);
+  subbuff[len] = '\0';
+  return strcmp(subbuff, str) == 0;
+}
+
+void sendShadowCommandSeq(char* command, char* checkRes, char* success, char* fail) {
+  do {
+    expresslinkExecuteCommand(command);
+    retries = 0;
+    do {
+      delay(2000);
+      expresslinkExecuteCommand(checkRes);
+      retries++;
+    } while (retries<5
+             && !startsWith(expresslinkResponse, fail, strlen(fail))
+             && !startsWith(expresslinkResponse, success, strlen(success)));
+  } while (!startsWith(expresslinkResponse, fail, strlen(fail)));
 }
