@@ -19,7 +19,7 @@ uint32_t timeout_ms = 20000;    // number of ms to wait for ExpressLink response
 #define waterSensorPin A0
 #define lightSensorPin A1
 #define powerPin D7
-#define waterPin D6
+#define waterPin D8
 
 #define EXPRESSLINK_SERIAL_RX_PIN 0
 #define EXPRESSLINK_SERIAL_TX_PIN 1
@@ -41,5 +41,10 @@ int soilMoisture = 0;
 bool waterOn = false;
 int retries = 0;
 
-char expresslinkResponse[300];
+enum OTAStates {NO_OTA, DOWNLOADING, DOWNLOAD_OTA, OTA_UPDATE};
+OTAStates state = NO_OTA;
+bool awaitingOTAResponse = true;
+bool otaInProgress = false;
+
+char expresslinkResponse[1500];
 char MQTTMessage[70];
