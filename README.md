@@ -1,14 +1,18 @@
 ## AWS IoT ExpressLink Plant Reference
 
-The plant demo will demonstrate how to integrate various AWS cloud features with ExpressLink. The plant demo uses several peripherals to montor the environment of a plant and notify a user when certain variables are outside of the desired state for the plant.
+The plant demo will demonstrate how to integrate various AWS cloud features with ExpressLink. The plant demo uses several peripherals to monitor the environment of a plant and notify a user when certain variables are outside of the desired state for the plant.
+
+<br>
+<center><img src="docs/architectureDiagram.png" alt="alt text"/></center>
+</br>
 
 ## Repository structure 
 
-The repository is seperated into 2 folders: cdk and arduino. The arduino folder contains the code that needs to be flashed onto the host board. The cdk folder contains the cdk template for creating and deploying the cloud resources for the demo.
+The repository is separated into 2 folders: cdk and arduino. The arduino folder contains the code that needs to be flashed onto the host board. The cdk folder contains the CDK template for creating and deploying the cloud resources for the demo.
 
 ## Hardware Setup
 
-The demo is built on an P-NUCLEO-WB55 by STMicroelectionics; running the example on a different host board may require some modification to the serial communication and peripheral connections. The demo uses three peripherals (photocell, temperature sensor, and water level sensor) to monitor the plant's environment.
+The demo is built on a P-NUCLEO-WB55 by STMicroelectionics; running the example on a different host board may require some modification to the serial communication and peripheral connections. The demo uses four sensors (photocell, temperature sensor, soil moisture sensor, and water level sensor) to monitor the plant's environment. In addition to these sensors the demo also includes a water pump for automatically watering the plant on a schedule.
 
 ## ExpressLink Documentation
 
