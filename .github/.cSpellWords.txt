@@ -1,0 +1,7 @@
+AIROC
+Espressif
+MQTT
+NUCLEO
+Realtek
+Telit
+blox
