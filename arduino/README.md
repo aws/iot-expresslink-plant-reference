@@ -111,8 +111,8 @@ the Serial Monitor and copy it. Save it in a text file on your host machine as
         {
           "Effect": "Allow",
           "Action": "*",
-          "Resource": "*" 
-        } 
+          "Resource": "*"
+        }
       ]
     }
     ```

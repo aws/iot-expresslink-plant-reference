@@ -6,7 +6,7 @@ The plant demo will demonstrate how to integrate various AWS cloud features with
 <center><img src="docs/architectureDiagram.png" alt="alt text"/></center>
 </br>
 
-## Repository structure 
+## Repository structure
 
 The repository is separated into 2 folders: cdk and arduino. The arduino folder contains the code that needs to be flashed onto the host board. The cdk folder contains the CDK template for creating and deploying the cloud resources for the demo.
 

@@ -13,7 +13,7 @@ void setup()
   digitalWrite(powerPin, LOW); // turn the sensors OFF
 
   pinMode(waterPin, OUTPUT);   // configure D6 pin as an OUTPUT
-  digitalWrite(waterPin, LOW); // turn the water pump OFF  
+  digitalWrite(waterPin, LOW); // turn the water pump OFF
 
   pinMode(LED_BUILTIN, OUTPUT);
 
@@ -42,7 +42,7 @@ void loop()
   if (!otaInProgress) {
     do {
       expresslinkExecuteCommand("AT+Event?\n");
-      
+
       if (startsWith(expresslinkResponse, "OK 3", 4)) {
         expresslinkExecuteCommand("AT+CONNECT\n");
         while (!startsWith(expresslinkResponse, "OK", 2)) {
@@ -63,7 +63,7 @@ void loop()
       sendData();
     }
   }
-  
+
   if (otaInProgress || awaitingOTAResponse) {
     ota();
   }
@@ -200,10 +200,10 @@ void ota() {
     case NO_OTA: {
       expresslinkExecuteCommand("AT+OTA?\n");
       if (startsWith(expresslinkResponse, "OK 0", 4)) {
-        awaitingOTAResponse = false;     
+        awaitingOTAResponse = false;
         otaInProgress = false;
       } else if (startsWith(expresslinkResponse, "OK 1", 4)) {
-        awaitingOTAResponse = true;        
+        awaitingOTAResponse = true;
         state = DOWNLOAD_OTA;
       }
       break;
@@ -227,8 +227,8 @@ void ota() {
           awaitingOTAResponse = false;
         } else if (userResponse.equals("n\r")) {
           expresslinkExecuteCommand("AT+OTA FLUSH\n");
-          awaitingOTAResponse = false;  
-          state = NO_OTA;              
+          awaitingOTAResponse = false;
+          state = NO_OTA;
         }
         break;
     }
