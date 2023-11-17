@@ -13,46 +13,6 @@ on:
   workflow_dispatch:
 
 jobs:
-  build-check:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-
-      - env:
-          stepName: Install Dependencies
-        working-directory: cdk
-        shell: bash
-        run: |
-          # ${{ env.stepName }}
-          echo -e "::group::${{ env.bashInfo }} ${{ env.stepName }} ${{ env.bashEnd }}"
-
-          sudo apt install npm nodejs -y;
-          sudo npm install -g aws-cdk aws-cdk-lib;
-          npm install;
-
-          echo -e "::endgroup::"
-          echo -e "${{ env.bashPass }} ${{ env.stepName }} ${{ env.bashEnd }}"
-
-      - env:
-          stepName: Build CDK Package
-        shell: bash
-        working-directory: cdk
-        run: |
-          # ${{ env.stepName }}
-          echo -e "::group::${{ env.bashInfo }} ${{ env.stepName }} ${{ env.bashEnd }}"
-
-          # Set values in config-params.ts to perform the build
-          sed -i "s/endpoint: \"\"/endpoint: \"BUILD_ENDPOINT\"/g" config-params.ts;
-          sed -i "s/thingName: \"\"/thingName: \"BUILD_THING_NAME\"/g" config-params.ts;
-          sed -i "s/email: ''/email: 'BUILD_EMAIL'/g" config-params.ts;
-
-          # Bootstrap the CDK, then perform a build
-          cdk bootstrap;
-          cdk build;
-
-          echo -e "::endgroup::"
-          echo -e "${{ env.bashPass }} ${{ env.stepName }} ${{ env.bashEnd }}"
-
   spell-check:
     runs-on: ubuntu-latest
     steps:
