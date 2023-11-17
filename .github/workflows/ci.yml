@@ -28,6 +28,7 @@ jobs:
 
           sudo apt install npm nodejs -y;
           sudo npm install -g aws-cdk aws-cdk-lib;
+          npm install;
 
           echo -e "::endgroup::"
           echo -e "${{ env.bashPass }} ${{ env.stepName }} ${{ env.bashEnd }}"
@@ -47,7 +48,6 @@ jobs:
 
           # Bootstrap the CDK, then perform a build
           cdk bootstrap;
-          npm install;
           cdk build;
 
           echo -e "::endgroup::"

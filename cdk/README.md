@@ -36,9 +36,9 @@ To run the plant example, execute the following:
 
 ```bash
 npm install -g aws-cdk;
-cdk bootstrap;
 cd cdk;
 npm install;
+cdk bootstrap;
 cdk deploy;
 ```
 
