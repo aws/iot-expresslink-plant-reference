@@ -1,8 +1,8 @@
 export const ConfigParams = {
     appName: "Plant-Environment",
     // change env if there is a specific account and region you want to deploy to
-    env: { 
-        account: process.env.CDK_DEFAULT_ACCOUNT, 
+    env: {
+        account: process.env.CDK_DEFAULT_ACCOUNT,
         region: process.env.CDK_DEFAULT_REGION,
         endpoint: "", // found in IoTCore Settings
         thingName: "", // output by arduino code setup
