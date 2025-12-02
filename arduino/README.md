@@ -148,8 +148,6 @@ select the policy you just created (for example, "IoTDevPolicy"), then choose
 
 [u-blox's USB-NORA-W256AWS AWS IoT ExpressLink Multiradio development kit](https://www.u-blox.com/en/product/usb-nora-w2?legacy=Current#Documentation-&-resources)
 
-[u-blox's SARA-R510AWS module LTE-M AWS IoT ExpressLink module](https://www.u-blox.com/en/product/sara-r510aws-module?legacy=Current#Documentation-&-resources)
-
 ### Telit
 
 [Telit's Bravo AWS IoT ExpressLink development kit on GitHub](https://github.com/telit/bravo-aws-expresslink)
