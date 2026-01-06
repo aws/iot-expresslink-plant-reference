@@ -3,8 +3,7 @@
     "target": "ES2022",
     "module": "commonjs",
     "lib": [
-      "es2022",
-      "esnext.disposable"
+      "es2022"
     ],
     "declaration": true,
     "strict": true,
