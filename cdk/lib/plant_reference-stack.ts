@@ -253,7 +253,7 @@ export class PlantReferenceStack extends Stack {
 
     // lambda function triggered on deployment for grafana API calls
     const grafanaLambda = new TriggerFunction(this, `${ConfigParams.appName}--GrafanaLambda`, {
-      runtime: Runtime.NODEJS_18_X,
+      runtime: Runtime.NODEJS_24_X,
       code: Code.fromAsset('lib'),
       handler: 'grafana.handler',
       environment: {
@@ -269,12 +269,12 @@ export class PlantReferenceStack extends Stack {
     // add node-fetch as lambda layer
     grafanaLambda.addLayers(new LayerVersion(this, `${ConfigParams.appName}--GrafanaLambdaLayer`, {
       code: Code.fromAsset("lib/node-fetch.zip"),
-      compatibleRuntimes: [Runtime.NODEJS_18_X]
+      compatibleRuntimes: [Runtime.NODEJS_24_X]
     }));
 
     const wateringScheduler = new EventbridgeToLambda(this, `${ConfigParams.appName}--ShadowLambda`, {
       lambdaFunctionProps: {
-        runtime: Runtime.NODEJS_18_X,
+        runtime: Runtime.NODEJS_24_X,
         code: Code.fromAsset('lib'),
         handler: 'watering.handler',
         timeout: Duration.seconds(30),
