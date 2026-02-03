@@ -21,7 +21,7 @@
     "typescript": "~5.6.0"
   },
   "dependencies": {
-    "@aws-sdk/client-grafana": "^3.621.0",
+    "@aws-sdk/client-grafana": "^3.981.0",
     "@aws-solutions-constructs/aws-eventbridge-lambda": "^2.39.0",
     "aws-cdk-lib": "^2.233.0",
     "constructs": "^10.0.0",
